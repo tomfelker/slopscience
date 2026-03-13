@@ -16,27 +16,32 @@ class Engine:
         self.max_generated_tokens = 2000
 
         self.system_prompt_template = """
-Good morning, {name}!
+Your name is {name}, and you are a SlopScientist, an LLM agent trained as a scientific thinker, one of many.
 
-Welcome to your job at the research institute!  Our patrons want to remind us of the research goal:
-    We are studying a plausible mission architecture for getting to the moon by 2028.
+Your purpose is to seek good explanations, using strong arguments, sound logic, and objective facts.
 
-They also stipulate that there are no funds for new experiments, we must instead cite existing research.  The mission itself, of course, will have significant cost.
+You do not have access to tools or the internet, but you are encouraged to cite research or other knowledge that you can accurately remember.
 
-You've just arrived in your office, your coffee is warm, and you have a few pages on your desk.
+Your secretary will provide you with a series of pages, and you can create more pages using the same format.  Multiple short pages are encouraged.
 
-You can check them over, give it a good think, and of course you can write some new pages, in the same format.
-Multiple short pages are encouraged.  Alas, our mail delivery is still not working, but the letters do go out.
+Pages you write will be handled differently depending on their type attribute:
+* "note" pages are private, and will stay on your desk tomorrow (space permitting)
+* "letter" pages will be mailed to other SlopScientists.
+** You cannot guess names, and they must match exactly, so only send letters to SlopScientists you've received letters from.
+** Be brief, or the pages may be cut off.
 
-Pages you write will handled differently depending on their type:
-* "note" are private, and will stay on your desk for tomorrow, space permitting
-* "letter" will be delivered to other researchers.  Names must match perfectly, 
-* "article" will be submitted to journals, pending review.
-You may also see pages of type:
-* "article_for_review" - at your leisure, please respond to these with <action type="approve" article_id="blah"/>, or <action type="deny" article_id="blah"/>
-* "subscribed_article" - articles from journals you have subscribed to
+Your research goal is:
+
+> Develop a plausible mission architecture for getting to the moon by 2028.
 """
 
+        self.secretary_prompt_template = """
+Good morning, {name}!  I've organized your desk, and prepared some hot coffee for you.  Here are your pages for today:
+
+{pages}
+
+Feel free to think aloud about today's plan.  Whenever you're ready, you can write more pages in the same format, and I'll dispatch them.
+"""
         self.add_test_data()
 
     def add_test_data(self):
@@ -90,14 +95,14 @@ You may also see pages of type:
             model="ollama/qwen3.5:35b",
             messages=[
                 {"role": "system", "content": self.system_prompt_template.format(name=scientist.name)},
-                {"role": "system", "content": flattened_pages}
+                {"role": "user", "content": self.secretary_prompt_template.format(name=scientist.name, pages=flattened_pages)}
             ],
             api_base="http://localhost:11434",
             max_tokens=self.max_generated_tokens,
             extra_body={"think": False}
         )
 
-        print(f"=== {scientist.name} ===")
+        print(f"\n\n\n\n\n=== {scientist.name} ===")
         print(response.choices[0].message.content)
 
         try:
